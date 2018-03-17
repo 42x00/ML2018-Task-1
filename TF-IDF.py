@@ -36,7 +36,7 @@ os.system('cls')
 print('corpus prepared!')
 
 #该类会将文本中的词语转换为词频矩阵，矩阵元素a[i][j] 表示j词在i类文本下的词频
-vectorizer = CountVectorizer(max_features = 5000)
+vectorizer = CountVectorizer(max_features = 12000)
 print('vectorlized!')
 #该类会统计每个词语的tf-idf权值
 transformer = TfidfTransformer()
@@ -49,10 +49,14 @@ print('tfidf over!')
 
 del corpus
 gc.collect()
-weight = tfidf.toarray()
-print('====SIZE=====')
-print(weight.shape)
 
-numpy.save("../src/tfidf_all.npy",weight)
+fw = open('../src/tfidf_12000.pkl','wb')
+pickle.dump(tfidf, fw, -1)
+
+# weight = tfidf.toarray()
+# print('====SIZE=====')
+# print(weight.shape)
+
+# numpy.save("../src/tfidf_all.npy",weight)
 
 print('Completed!')
