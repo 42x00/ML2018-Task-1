@@ -1,75 +1,91 @@
 import sklearn
 from sklearn.externals import joblib
-from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn import cross_validation,metrics
+from scipy.sparse import coo_matrix, vstack
 import numpy as np
 import time
-from sklearn.linear_model import LogisticRegression
 import gc
+import pickle
+import csv
+import xgboost
 
 train_case = 321910
+# features_cnt = 30000
+fold_cnt = int(train_case / 5) + 1
+true_cnt = 26349
+myscale_pos_weight = int((train_case - true_cnt) / true_cnt)
 
-def former_load():
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-    X_all = np.load("../src/tfidf_all.npy")
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-    X_train = X_all[:train_case]
-    print(X_train.shape)
-    X_test = X_all[train_case:]
-    print(X_test.shape)
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-    y_train = np.loadtxt("../src/y_all.txt")
-    print(y_train.shape)
-    print("loaded")
-
+with open("../src/tfidf_all.pkl","rb") as fr:
+    X_all = pickle.load(fr)
+X_train = X_all[:train_case]
+print(X_train.shape)
+X_test = X_all[train_case:]
+print(X_test.shape)
 y_train = np.loadtxt("../src/y_all.txt")
+print(y_train.shape)
+
+# X_all_csr = X_all.tocsr()
 
 # def k_fold():
-for k in range(5):
-    print("=========================")
-    print(k," fold start: ")
+for k in range(1):
+    # print("=========================")
+    # print(k," fold start: ")
+    #
+    # ky_test = y_train[k * fold_cnt : (k + 1) * fold_cnt]
+    # y_up = y_train[0 : k * fold_cnt]
+    # y_down = y_train[(k + 1) * fold_cnt : train_case]
+    # ky_train = np.concatenate([y_up, y_down], axis=0)
+    #
+    # print("y prepared")
+    #
+    # kX_test = X_all[k * fold_cnt : min((k + 1) * fold_cnt, train_case)]
+    # kX_train = vstack( [X_all_csr[0 : min(k * fold_cnt, train_case)], X_all_csr[min((k + 1) * fold_cnt, train_case) : train_case]] )
+    #
+    # print("X prepared")
+    # print("=========================")
+    #
+    # print("train_X: ", kX_train.shape)
+    # print("train_y: ", ky_train.shape)
+    # print("test_X: ", kX_test.shape)
+    # print("test_y: ", ky_test.shape)
+    # print("=========================")
 
-    ky_test = np.load("../src/k_fold_data/y_" + str(k) + ".npy")
-    ky_train = []
-    for file_t in range(5):
-        if file_t == k:
-            continue
-        ky_train.append(list(np.load("../src/k_fold_data/y_" + str(file_t) + ".npy")))
+    # ======================================================================== #
+    #                                START                                     #
+    # ======================================================================== #
 
-    print("y prepared")
+    for test_learning_rate in [0.1, 0.05]:
+        for test_n_estimators in [50, 100]:
+            for test_max_depth in [10, 50, 100]:
+                print("fold:", k)
+                print("learning_rate:", test_learning_rate)
+                print("n_estimators:", test_n_estimators)
+                print("max_depth:", test_max_depth)
+                print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+                print("fitting...")
 
-    kX_test = np.load("../src/k_fold_data/X_" + str(k) + ".npy")
-    kX_train = []
-    for file_t in range(5):
-        if file_t == k:
-            continue
-        kX_train.append(list(np.load("../src/k_fold_data/X_" + str(file_t) + ".npy")))
+                xlf = xgboost.XGBClassifier(max_depth=test_max_depth, learning_rate=test_learning_rate,
+                n_estimators=test_n_estimators, objective='reg:linear',n_jobs=4, gamma=0, min_child_weight=1, max_delta_step=0,
+                subsample=0.85, scale_pos_weight= myscale_pos_weight,reg_alpha=1, seed= 420)
 
-    print("X prepared")
-    print("=========================")
+                xlf.fit(X_train, y_train)
 
-    print("train_X: ", len(kX_train))
-    print("train_y: ", len(ky_train))
-    print("test_X: ", kX_test.shape)
-    print("test_y: ", ky_test.shape)
-    print("=========================")
+                print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+                print("fit over")
+                pd_y = xlf.predict_proba(X_test)
+                np.save("../src/pred_ans/xgboost"+str(test_learning_rate) + ' ' +
+                str(test_n_estimators) + ' ' + str(test_max_depth) + ".npy",pd_y)
 
-    for test_c in range(1,200):
-        test_c /= 100
-        lr = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C= test_c , fit_intercept=True,
-         intercept_scaling=1, class_weight=None, random_state=None,solver='liblinear',
-         max_iter=100, multi_class='ovr', verbose=0, warm_start=False, n_jobs=1)
-        lr.fit(kX_train, ky_train)
-        pd_y = lr.predict(kX_test)
-        print("pred_y: ", pd_y.shape)
-        test_auc = metrics.roc_auc_score(ky_test,pd_y[:,0])
-        print('k = ',k,'C = ',test_c)
-        print('AUC = ', test_auc)
-        print("=========================")
-        del pd_y
-        gc.collect()
-        with open("../src/models/history.csv","a") as fd:
-            fd.writerow([k,test_c,test_auc])
+                # test_auc = metrics.roc_auc_score(ky_test,pd_y[:,1])
+                # auc = max(test_auc, 1-test_auc)
+                # print('AUC = ', auc)
+                print("=========================")
+                del pd_y
+                gc.collect()
+                # with open("../models/xgboost_history.csv", 'a', newline='') as f:
+                #     writer = csv.writer(f)
+                #     writer.writerow([k,test_learning_rate,test_n_estimators,test_max_depth,auc])
 
     del ky_test
     del ky_train

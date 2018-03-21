@@ -12,7 +12,7 @@ from sklearn.externals import joblib
 
 fc_list = []
 for file_t in range(10):
-    with open('../src/train_data/train_fc_list_' + str(file_t + 1) + '.txt','rb') as fr:
+    with open('../src/train_data/train_fc_list_' + str(file_t + 1) + '.pkl','rb') as fr:
         tmp = pickle.load(fr)
         fc_list += tmp
     print(str(file_t*10) + '%')
@@ -35,8 +35,12 @@ gc.collect()
 os.system('cls')
 print('corpus prepared!')
 
+features_cnt = 30000
+
 #该类会将文本中的词语转换为词频矩阵，矩阵元素a[i][j] 表示j词在i类文本下的词频
-vectorizer = CountVectorizer(max_features = 12000)
+# vectorizer = CountVectorizer(max_features = features_cnt)
+vectorizer = CountVectorizer()
+# print(vectorizer.shape)
 print('vectorlized!')
 #该类会统计每个词语的tf-idf权值
 transformer = TfidfTransformer()
@@ -50,7 +54,7 @@ print('tfidf over!')
 del corpus
 gc.collect()
 
-fw = open('../src/tfidf_12000.pkl','wb')
+fw = open('../src/tfidf_all.pkl','wb')
 pickle.dump(tfidf, fw, -1)
 
 # weight = tfidf.toarray()
