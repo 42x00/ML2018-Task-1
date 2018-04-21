@@ -47,10 +47,9 @@ xlf = xgboost.XGBClassifier(learning_rate=0.05,
                             gamma=0,
                             seed=420,
                             n_jobs=-1,
-                            silent=True)
+                            silent=False)
 
-xlf.fit(X_train_all, y_all, eval_metric='auc', verbose=True,
-        eval_set=[(X_train_all, y_all)])
+xlf.fit(X_train_all, y_all)
 
 with open('../models/XGB_n2uwp_18_2_2_1.pkl', 'wb') as fw:
     pickle.dump(xlf, fw, -1)
