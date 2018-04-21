@@ -7,8 +7,8 @@ import pickle
 
 data = []
 
-with open('../src/train.json','r') as f:
-# with open('../src/test.json','r') as f:
+with open('../src/train.json', 'r') as f:
+    # with open('../src/test.json','r') as f:
     i = 0
     for line in f:
         i += 1
@@ -22,9 +22,12 @@ with open('../src/train.json','r') as f:
             content += (' ' + string)
         data += [content]
         # print content
-        # if i == 1:
-        #     break
+        if i == 5:
+            break
 
-fw = open('../src/train_bin.txt','wb')
-# fw = open('../src/test_bin.txt','wb')
-pickle.dump(data, fw, -1)
+for txt in data:
+    print(txt)
+    print('=================================')
+
+# with open('../src/train_bin.txt', 'wb') as fw:
+#     pickle.dump(data, fw, -1)

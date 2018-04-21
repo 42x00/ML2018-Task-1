@@ -1,7 +1,7 @@
 import sklearn
 from sklearn.externals import joblib
 from sklearn.linear_model import LogisticRegression
-from sklearn import cross_validation,metrics
+from sklearn import cross_validation, metrics
 from scipy.sparse import coo_matrix, vstack
 import numpy as np
 import time
@@ -16,7 +16,7 @@ fold_cnt = int(train_case / 5) + 1
 true_cnt = 26349
 myscale_pos_weight = int((train_case - true_cnt) / true_cnt)
 
-with open("../src/tfidf_all.pkl","rb") as fr:
+with open("../src/tfidf_all.pkl", "rb") as fr:
     X_all = pickle.load(fr)
 X_train = X_all[:train_case]
 print(X_train.shape)
@@ -62,20 +62,22 @@ for k in range(1):
                 print("learning_rate:", test_learning_rate)
                 print("n_estimators:", test_n_estimators)
                 print("max_depth:", test_max_depth)
-                print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+                print(time.strftime('%Y-%m-%d %H:%M:%S',
+                                    time.localtime(time.time())))
                 print("fitting...")
 
                 xlf = xgboost.XGBClassifier(max_depth=test_max_depth, learning_rate=test_learning_rate,
-                n_estimators=test_n_estimators, objective='reg:linear',n_jobs=4, gamma=0, min_child_weight=1, max_delta_step=0,
-                subsample=0.85, scale_pos_weight= myscale_pos_weight,reg_alpha=1, seed= 420)
+                                            n_estimators=test_n_estimators, objective='reg:linear', n_jobs=4, gamma=0, min_child_weight=1, max_delta_step=0,
+                                            subsample=0.85, scale_pos_weight=myscale_pos_weight, reg_alpha=1, seed=420)
 
                 xlf.fit(X_train, y_train)
 
-                print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+                print(time.strftime('%Y-%m-%d %H:%M:%S',
+                                    time.localtime(time.time())))
                 print("fit over")
                 pd_y = xlf.predict_proba(X_test)
                 np.save("../src/pred_ans/xgboost"+str(test_learning_rate) + ' ' +
-                str(test_n_estimators) + ' ' + str(test_max_depth) + ".npy",pd_y)
+                        str(test_n_estimators) + ' ' + str(test_max_depth) + ".npy", pd_y)
 
                 # test_auc = metrics.roc_auc_score(ky_test,pd_y[:,1])
                 # auc = max(test_auc, 1-test_auc)
